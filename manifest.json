@@ -1,6 +1,6 @@
 {
   "name": "Karaagechan",
-  "short_name": "からあげちゃん",
+  "short_name": "作業用",
   "description": "学習・習慣管理アプリ",
   "start_url": "./index.html",
   "display": "standalone",
