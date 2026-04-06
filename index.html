@@ -825,22 +825,67 @@ function TimerSection({onchange}) {
     return()=>clearInterval(id);
   },[swRun]); // eslint-disable-line
 
-  // 画面復帰時に即再同期
+  // 画面が隠れた時刻を記録するref
+  const hiddenAtRef = useRef(null);
+  const lastLoggedSecRef = useRef(-1);
+
+  // 画面復帰時に即再同期＋バックグラウンド中の秒数をtlに一括加算
   useEffect(()=>{
+    const onHidden=()=>{
+      if(document.visibilityState==='hidden'){
+        hiddenAtRef.current=Date.now();
+        // 隠れた時点でのtick済み秒数を記録
+        if(pomRun&&pomStartRef.current){
+          lastLoggedSecRef.current=Math.floor((Date.now()-pomStartRef.current)/1000);
+        }else if(swRun&&swStartRef.current){
+          lastLoggedSecRef.current=Math.floor((Date.now()-swStartRef.current)/1000);
+        }
+      }
+    };
     const onVisible=()=>{
       if(document.visibilityState!=='visible')return;
+      // ポモドーロ：表示時間の再同期
       if(pomRun&&pomStartRef.current){
         const elapsed=Math.floor((Date.now()-pomStartRef.current)/1000);
         setPomSecs(Math.max(0,pomBaseSecsRef.current-elapsed));
+        // バックグラウンド中の作業秒数をtlに一括加算（作業モードのみ）
+        if(modeRef.current==='work'&&hiddenAtRef.current){
+          const bgSecs=Math.floor((Date.now()-hiddenAtRef.current)/1000);
+          if(bgSecs>0){
+            setTl(prev=>{
+              const k=todayStr();const id=activeCat||'_none';
+              const day=prev[k]||{};
+              return{...prev,[k]:{...day,[id]:(day[id]||0)+bgSecs}};
+            });
+          }
+          lastTickSecRef.current=elapsed; // intervalの二重加算防止
+        }
       }
+      // ストップウォッチ：表示時間の再同期＋一括加算
       if(swRun&&swStartRef.current){
         const elapsed=Math.floor((Date.now()-swStartRef.current)/1000);
         setSwSecs(swBaseSecsRef.current+elapsed);
+        if(hiddenAtRef.current){
+          const bgSecs=Math.floor((Date.now()-hiddenAtRef.current)/1000);
+          if(bgSecs>0){
+            setTl(prev=>{
+              const k=todayStr();const id=activeCat||'_none';
+              const day=prev[k]||{};
+              return{...prev,[k]:{...day,[id]:(day[id]||0)+bgSecs}};
+            });
+          }
+          lastTickSecRef.current=elapsed;
+        }
       }
+      hiddenAtRef.current=null;
     };
+    document.addEventListener('visibilitychange',onHidden);
     document.addEventListener('visibilitychange',onVisible);
-    return()=>document.removeEventListener('visibilitychange',onVisible);
-  },[pomRun,swRun]);
+    return()=>{
+      document.removeEventListener('visibilitychange',onHidden);
+      document.removeEventListener('visibilitychange',onVisible);
+    };
+  },[pomRun,swRun,activeCat]);
 
   const resetPom=()=>{setPomRun(false);modeRef.current='work';setPomMode('work');setPomSecs(WORK_TIME);};
   const resetSw=()=>{setSwRun(false);setSwSecs(0);};
