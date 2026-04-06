@@ -1,0 +1,19 @@
+{
+  "name": "Karaagechan",
+  "short_name": "からあげちゃん",
+  "description": "学習・習慣管理アプリ",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#C9A8E0",
+  "background_color": "#FDF6FF",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
