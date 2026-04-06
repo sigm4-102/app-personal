@@ -744,6 +744,26 @@ function TimerSection({onchange}) {
 
   const todayTotal=useMemo(()=>Object.values(tl[todayStr()]||{}).reduce((a,b)=>a+b,0),[tl]);
 
+  // 通知ヘルパー
+  const notifyPom = useCallback((mode)=>{
+    if(Notification.permission!=='granted')return;
+    if(mode==='break'){
+      new Notification('🍅 お疲れ様！休憩タイムです',{
+        body:'25分の作業完了！5分休憩しましょう ☕',
+        icon:'./icon.svg',
+        tag:'karaagechan-pom',
+        renotify:true,
+      });
+    }else{
+      new Notification('☕ 休憩終了！作業を再開しましょう',{
+        body:'さあ次の25分スタート 🍅',
+        icon:'./icon.svg',
+        tag:'karaagechan-pom',
+        renotify:true,
+      });
+    }
+  },[]);
+
   // Date.now()ベースのタイマー基準値
   const pomStartRef    = useRef(null);
   const pomBaseSecsRef = useRef(WORK_TIME);
@@ -772,12 +792,12 @@ function TimerSection({onchange}) {
           modeRef.current='break';setPomMode('break');setPomCycles(c=>c+1);
           sndPomSwitch(false);setPomFlash(true);setTimeout(()=>setPomFlash(false),700);
           pomStartRef.current=Date.now();pomBaseSecsRef.current=BREAK_TIME;
-          setPomSecs(BREAK_TIME);
+          setPomSecs(BREAK_TIME);notifyPom('break');
         }else{
           modeRef.current='work';setPomMode('work');
           sndPomSwitch(true);setPomFlash(true);setTimeout(()=>setPomFlash(false),700);
           pomStartRef.current=Date.now();pomBaseSecsRef.current=WORK_TIME;
-          setPomSecs(WORK_TIME);
+          setPomSecs(WORK_TIME);notifyPom('work');
         }
         lastTickSecRef.current=-1;
       }else{
@@ -843,7 +863,12 @@ function TimerSection({onchange}) {
       e('div',{key:'disp',className:'timer-display'},fmtMS(pomSecs)),
       e('div',{key:'bar',className:'pom-bar-wrap'},e('div',{className:'pom-bar-fill',style:{width:prog+'%'}})),
       e('div',{key:'ctrl',className:'timer-controls'},
-        e('button',{className:'tc-btn tc-primary',onClick:()=>setPomRun(r=>!r)},pomRun?'⏸ 停止':'▶ スタート'),
+        e('button',{className:'tc-btn tc-primary',onClick:()=>{
+          if(!pomRun&&Notification.permission==='default'){
+            Notification.requestPermission();
+          }
+          setPomRun(r=>!r);
+        }},pomRun?'⏸ 停止':'▶ スタート'),
         e('button',{className:'tc-btn tc-secondary',onClick:resetPom},'↺'),
       ),
       pomCycles>0 && e('div',{key:'cyc',className:'pom-cycles'},'🍅 × '+pomCycles+' セッション完了'),
