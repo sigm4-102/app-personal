@@ -774,6 +774,9 @@ function TimerSection({onchange}) {
   const tick=useCallback(()=>{
     setTl(prev=>{const k=todayStr();const id=activeCat||'_none';const day=prev[k]||{};return{...prev,[k]:{...day,[id]:(day[id]||0)+1}};});
   },[activeCat]);
+  // 常に最新のtickを参照するためのref
+  const tickRef=useRef(tick);
+  useEffect(()=>{tickRef.current=tick;},[tick]);
 
   // ポモドーロ：Date.now()差分で残り秒を計算
   useEffect(()=>{
@@ -785,7 +788,7 @@ function TimerSection({onchange}) {
       const elapsed=Math.floor((Date.now()-pomStartRef.current)/1000);
       const remaining=Math.max(0,pomBaseSecsRef.current-elapsed);
       if(modeRef.current==='work'&&elapsed!==lastTickSecRef.current){
-        lastTickSecRef.current=elapsed;tick();
+        lastTickSecRef.current=elapsed;tickRef.current();
       }
       if(remaining<=0){
         if(modeRef.current==='work'){
@@ -816,7 +819,7 @@ function TimerSection({onchange}) {
     const id=setInterval(()=>{
       const elapsed=Math.floor((Date.now()-swStartRef.current)/1000);
       const total=swBaseSecsRef.current+elapsed;
-      if(elapsed!==lastTickSecRef.current){lastTickSecRef.current=elapsed;tick();}
+      if(elapsed!==lastTickSecRef.current){lastTickSecRef.current=elapsed;tickRef.current();}
       setSwSecs(total);
     },500);
     return()=>clearInterval(id);
